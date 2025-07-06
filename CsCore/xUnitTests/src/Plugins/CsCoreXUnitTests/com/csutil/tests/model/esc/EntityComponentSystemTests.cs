@@ -21,7 +21,7 @@ namespace com.csutil.tests.model.esc {
         [Fact]
         public async Task ExampleUsageOfTemplatesIO() {
 
-            var rootDir = EnvironmentV2.instance.GetOrAddTempFolder("EntityComponentSystemTests_ExampleUsage1");
+            var rootDir = EnvironmentV2.instance.GetOrAddTempFolder("EntityComponentSystemTests_ExampleUsageOfTemplatesIO");
             var templatesDir = rootDir.GetChildDir("Templates");
             templatesDir.DeleteV2();
             templatesDir.CreateV2();
