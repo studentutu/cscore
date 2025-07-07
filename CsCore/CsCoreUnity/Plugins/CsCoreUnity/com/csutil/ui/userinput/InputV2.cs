@@ -20,6 +20,9 @@ namespace com.csutil {
         [Obsolete("Instead use instance version by first calling GetInputSystem()")]
         public static bool GetMouseButton(int button) { return GetInputSystem().GetMouseButton(button); }
 
+        [Obsolete("Instead use instance version by first calling GetInputSystem()")]
+        public static Vector3 mousePosition => GetInputSystem().mousePosition;
+
 #if ENABLE_INPUT_SYSTEM
         private static readonly Func<IUnityInputSystem> DefaultInputSystemFactory = () => new NewUnityInputSystem();
 #else
@@ -36,6 +39,7 @@ namespace com.csutil {
         bool GetKeyUp(KeyCode keyCode);
         bool GetKey(KeyCode keyCode);
         int touchCount { get; }
+        Vector3 mousePosition { get; }
         bool GetMouseButton(int button);
         bool GetMouseButtonDown(int button);
     }
@@ -47,6 +51,7 @@ namespace com.csutil {
         public int touchCount => Input.touchCount;
         public bool GetMouseButton(int button) { return Input.GetMouseButton(button); }
         public bool GetMouseButtonDown(int button) { return Input.GetMouseButtonDown(button); }
+        public Vector3 mousePosition => Input.mousePosition;
 
     }
 
@@ -66,6 +71,7 @@ namespace com.csutil {
         }
 
         public int touchCount => Touchscreen.current?.touches.Count ?? 0;
+        public Vector3 mousePosition => Mouse.current?.position.ReadValue() ?? Vector3.zero;
 
         public bool GetMouseButton(int button) {
             if (Mouse.current == null) { return false; }
