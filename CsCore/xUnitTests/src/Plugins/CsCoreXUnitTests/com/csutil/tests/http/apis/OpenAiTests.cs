@@ -448,14 +448,7 @@ namespace com.csutil.integrationTests.http {
             conversationSoFar.AddValidExampleSchemaResponses(exampleResponse);
             
             var request = new ChatGpt.Request(conversationSoFar);
-            
-            // Use json schema as the response format:
-            var schemaName = exampleResponse.GetType().Name;
-            var jsonSchema = ChatGptExtensions.CreateJsonSchema(exampleResponse);
-            request.response_format = ChatGpt.Request.ResponseFormat.NewJsonSchema(schemaName, jsonSchema);
-            
-            // TODO around 2024-09-13 this preview version here will become the detault, so afterwards this can be changed to "gpt-4o" 
-            request.model = "gpt-4o-2024-08-06"; // See https://platform.openai.com/docs/models/gpt-4o
+            request.SetResponseFormatToJsonSchema(exampleResponse); // Use json schema as the response format
             return request;
         }
 
