@@ -428,7 +428,7 @@ namespace com.csutil.http.apis {
         private static string GetSchemaExamplesString<T>(T[] exampleResponses) {
             var exampleJsonInfos = " For the latest provided json schema, these are examples of a valid response:";
             foreach (T exampleResponse in exampleResponses) {
-                var exampleJson = JsonWriter.GetWriter(exampleResponses).Write(exampleResponses);
+                var exampleJson = JsonWriter.GetWriter(exampleResponse).Write(exampleResponse);
                 exampleJsonInfos += " " + exampleJson;
             }
             return exampleJsonInfos;
@@ -455,10 +455,10 @@ namespace com.csutil.http.apis {
         public static string GetContentAsJsonString(this ChatGpt.Message self) {
             var responseText = self.content;
             if (responseText.StartsWith("```json\n")) {
-                responseText = responseText.Replace("```json\n", "");
+                responseText = responseText.Substring("```json\n".Length);
             }
             if (responseText.EndsWith("\n```")) {
-                responseText = responseText.Replace("\n```", "");
+                responseText = responseText.Substring(0, responseText.Length - "\n```".Length);
             }
             return responseText;
         }
