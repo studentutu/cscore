@@ -426,7 +426,7 @@ namespace com.csutil.http.apis {
         }
 
         private static string GetSchemaExamplesString<T>(T[] exampleResponses) {
-            var exampleJsonInfos = " For the provided json schema, these would be examples of a valid response:";
+            var exampleJsonInfos = " For the latest provided json schema, these are examples of a valid response:";
             foreach (T exampleResponse in exampleResponses) {
                 var exampleJson = JsonWriter.GetWriter(exampleResponses).Write(exampleResponses);
                 exampleJsonInfos += " " + exampleJson;
