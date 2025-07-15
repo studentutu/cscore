@@ -64,7 +64,7 @@ namespace com.csutil.tests.model.esc {
                 Assert.Equal(instance3.TemplateId, instance4.TemplateId);
                 Assert.NotEqual(instance3.Id, instance4.Id);
             }
-
+            await TaskV2.Delay(100);
             var ecs2 = newTemplatesIO<Entity>(templatesDir);
 
             var ids = ecs2.GetAllEntityIds().ToList();
