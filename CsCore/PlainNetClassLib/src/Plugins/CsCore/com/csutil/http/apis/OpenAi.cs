@@ -214,6 +214,11 @@ namespace com.csutil.http.apis {
             /// The token count of your prompt plus max_tokens cannot exceed the model's context length.
             /// Most models have a context length of 2048 tokens (except for the newest models, which support 4096). </summary>
             public int max_tokens { get; set; }
+
+            /// <summary> Number of desired <see cref="Response.choices"/> to be returned, defaults to 1.
+            /// See also https://platform.openai.com/docs/api-reference/chat/create#chat-create-n </summary>
+            public int? n { get; set; } = null;
+            
             public List<Message> messages { get; set; }
 
             /// <summary> e.g. "text", "audio" to be able to return both text and audio </summary>
@@ -292,6 +297,8 @@ namespace com.csutil.http.apis {
             public int created { get; set; }
             public string model { get; set; }
             public Usage usage { get; set; }
+            
+            /// <summary> If <see cref="Request.n"/> was set to a value greater than 1 then this will contain multiple choices </summary>
             public List<Choice> choices { get; set; }
 
             public class Choice {
@@ -419,14 +426,20 @@ namespace com.csutil.http.apis {
         }
 
         private static string GetSchemaExamplesString<T>(T[] exampleResponses) {
-            var exampleJsonInfos = " For the provided json schema, these would be examples of a valid response:";
+            var exampleJsonInfos = " For the latest provided json schema, these are examples of a valid response:";
             foreach (T exampleResponse in exampleResponses) {
-                var exampleJson = JsonWriter.GetWriter(exampleResponses).Write(exampleResponses);
+                var exampleJson = JsonWriter.GetWriter(exampleResponse).Write(exampleResponse);
                 exampleJsonInfos += " " + exampleJson;
             }
             return exampleJsonInfos;
         }
 
+        public static void SetResponseFormatToJsonSchema<T>(this ChatGpt.Request self, T exampleResponse) {
+            var schemaName = exampleResponse.GetType().Name;
+            var jsonSchema = CreateJsonSchema(exampleResponse);
+            self.response_format = ChatGpt.Request.ResponseFormat.NewJsonSchema(schemaName, jsonSchema);
+        }
+        
         public static JsonSchema CreateJsonSchema<T>(T exampleResponse) {
             var schemaGenerator = new ModelToJsonSchema(nullValueHandling: NullValueHandling.Ignore);
             var className = typeof(T).Name;
@@ -435,15 +448,19 @@ namespace com.csutil.http.apis {
             return jsonSchema;
         }
 
-        public static T ParseNewLineContentAsJson<T>(this ChatGpt.Message newLine) {
-            var responseText = (string)newLine.content;
+        public static T ParseNewLineContentAsJson<T>(this ChatGpt.Message self) {
+            return JsonReader.GetReader().Read<T>(self.GetContentAsJsonString());
+        }
+        
+        public static string GetContentAsJsonString(this ChatGpt.Message self) {
+            var responseText = self.content;
             if (responseText.StartsWith("```json\n")) {
-                responseText = responseText.Replace("```json\n", "");
+                responseText = responseText.Substring("```json\n".Length);
             }
             if (responseText.EndsWith("\n```")) {
-                responseText = responseText.Replace("\n```", "");
+                responseText = responseText.Substring(0, responseText.Length - "\n```".Length);
             }
-            return JsonReader.GetReader().Read<T>(responseText);
+            return responseText;
         }
 
     }
