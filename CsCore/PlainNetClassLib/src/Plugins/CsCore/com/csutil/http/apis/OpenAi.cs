@@ -7,6 +7,8 @@ using com.csutil.model.jsonschema;
 using Newtonsoft.Json;
 using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
+using com.csutil.model;
 using Zio;
 
 namespace com.csutil.http.apis {
@@ -257,10 +259,15 @@ namespace com.csutil.http.apis {
                 public static ResponseFormat json => new ResponseFormat() { type = "json_object" };
 
                 /// <summary> See https://platform.openai.com/docs/guides/structured-outputs/how-to-use </summary>
-                public static ResponseFormat NewJsonSchema(string name, JsonSchema schema) => new ResponseFormat() {
-                    type = "json_schema",
-                    json_schema = new JsonSchemaResponse(name, schema, strict: true)
-                };
+                public static ResponseFormat NewJsonSchema(string name, JsonSchema schema) {
+                    if (schema.additionalProperties) {
+                        throw new ArgumentException($"Invalid schema: {name} has 'additionalProperties' set to true, but this is not supported in strict json schema mode.");
+                    }
+                    return new ResponseFormat() {
+                        type = "json_schema",
+                        json_schema = new JsonSchemaResponse(name, schema, strict: true)
+                    };
+                }
 
                 public string type { get; set; }
 
@@ -282,6 +289,12 @@ namespace com.csutil.http.apis {
                         this.name = name;
                         this.schema = schema;
                         this.strict = strict;
+                        if (!Regex.IsMatch(name, "^[a-zA-Z0-9_-]+$")) { // name must match the pattern '^[a-zA-Z0-9_-]+$' so verify that here:
+                            throw new ArgumentException($"Invalid 'response_format.json_schema.name': {name} does not match pattern. Expected a string that matches the pattern '^[a-zA-Z0-9_-]+$'.");
+                        }
+                        if (schema.type != "object") {
+                            throw new ArgumentException($"Invalid schema.type: {schema.type} is not supported, expected 'object'.");
+                        }
                     }
 
                 }

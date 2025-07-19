@@ -71,6 +71,7 @@ namespace com.csutil.model.jsonschema {
             }
             var req = schema.properties.Filter(f => f.Value.mandatory == true).Map(f => f.Key);
             if (!req.IsNullOrEmpty()) { schema.required = req.ToList(); }
+            schema.description = modelType.GetCustomAttribute<System.ComponentModel.DescriptionAttribute>(true)?.Description;
             return schema;
         }
 
