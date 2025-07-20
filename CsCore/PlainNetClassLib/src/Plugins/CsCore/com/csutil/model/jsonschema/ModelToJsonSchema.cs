@@ -86,7 +86,8 @@ namespace com.csutil.model.jsonschema {
             foreach (var member in modelType.GetMembers()) {
                 if (member is FieldInfo || member is PropertyInfo) {
                     var fieldName = member.Name;
-                    schema.properties.Add(fieldName, NewField(fieldName, modelType));
+                    var jsonFieldName = GetJsonFieldName(fieldName, member);
+                    schema.properties.Add(jsonFieldName, NewField(fieldName, modelType));
                 }
             }
         }
@@ -104,7 +105,8 @@ namespace com.csutil.model.jsonschema {
             Type modelType = GetModelType(model);
             JTokenType jTokenType = ToJTokenType(modelType, jpInstance);
             AssertV3.IsNotNull(jTokenType, "jTokenType");
-            JsonSchema newField = new JsonSchema() { type = jTokenType.ToJsonSchemaType(), title = JsonSchema.ToTitle(name) };
+            var jsonFieldName = model == null ? name : GetJsonFieldName(name, model);
+            JsonSchema newField = new JsonSchema() { type = jTokenType.ToJsonSchemaType(), title = JsonSchema.ToTitle(jsonFieldName) };
             ExtractFieldDocu(newField, model, modelType, jTokenType, pInstance, jpInstance);
             if (model != null) {
                 if (!model.CanWriteTo()) { newField.readOnly = true; }
@@ -187,6 +189,14 @@ namespace com.csutil.model.jsonschema {
                 }
             }
             return newField;
+        }
+
+        private static string GetJsonFieldName(string memberInfoName, MemberInfo memberInfo) {
+            memberInfo.ThrowErrorIfNull("memberInfo");
+            var jsonPropertyAttr = memberInfo.GetCustomAttribute<JsonPropertyAttribute>();
+            var jsonPropAttrDefinesJsonFieldName = (jsonPropertyAttr != null && !string.IsNullOrEmpty(jsonPropertyAttr.PropertyName));
+            var jsonFieldName = jsonPropAttrDefinesJsonFieldName ? jsonPropertyAttr.PropertyName : memberInfoName;
+            return jsonFieldName;
         }
 
         public virtual bool ExtractFieldDocu(JsonSchema field, MemberInfo m, Type modelType, JTokenType t, object pInstance, JToken jpInstance) {

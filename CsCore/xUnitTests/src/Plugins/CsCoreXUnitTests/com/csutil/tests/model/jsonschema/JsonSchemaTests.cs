@@ -164,6 +164,21 @@ namespace com.csutil.tests.model.jsonschema {
 
         }
 
+        [Fact]
+                public void TestGetJsonFieldName() {
+                    var model = new JsonFieldNameTestModel();
+                    var schemaGenerator = new ModelToJsonSchema();
+                    var schema = schemaGenerator.ToJsonSchema(nameof(JsonFieldNameTestModel), model);
+                    
+                    Assert.True(schema.properties.ContainsKey("custom_name"));
+                    Assert.True(schema.properties.ContainsKey("fieldWithoutAttribute"));
+                    
+                    Assert.Equal("Custom Name", schema.properties["custom_name"].title);
+                    Assert.Equal("Field Without Attribute", schema.properties["fieldWithoutAttribute"].title);
+                }
+        
+                
+        
         /// <summary>
         /// The following test uses the validator of System.ComponentModel to validate the model / object instance
         /// fields have values that are within the defined limits (enforced via the annotations on the model fields)
@@ -288,6 +303,15 @@ namespace com.csutil.tests.model.jsonschema {
 
             [Enum("Level of experience 5", "Beginner", "Avg", "Expert")]
             public int experience5;
+
+        }
+
+        private class JsonFieldNameTestModel {
+
+            [JsonProperty("custom_name")]
+            public string Name { get; set; }
+
+            public string fieldWithoutAttribute { get; set; }
 
         }
 
