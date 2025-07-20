@@ -93,15 +93,20 @@ namespace com.csutil.model.jsonschema {
         }
 
         private void AddFieldsViaJson(JsonSchema schema, object model, IEnumerable<KeyValuePair<string, JToken>> jsonModel) {
+            var modelType = model?.GetType();
             foreach (var property in jsonModel) {
-                schema.properties.Add(property.Key, NewField(property.Key, model?.GetType(), model, property.Value));
+                MemberInfo member = null;
+                if (modelType != null && property.Value is JValue jv && jv.Parent is JProperty jp) {
+                    member = modelType.GetMember(jp.Name).FirstOrDefault();
+                }
+                schema.properties.Add(property.Key, NewField(property.Key, modelType, model, property.Value, member));
             }
         }
 
         public JObject ToJsonModel(object model) { return JObject.FromObject(model, jsonSerializer); }
 
-        public virtual JsonSchema NewField(string name, Type parentType, object pInstance = null, JToken jpInstance = null) {
-            MemberInfo model = parentType?.GetMember(name).First();
+        public virtual JsonSchema NewField(string name, Type parentType, object pInstance = null, JToken jpInstance = null, MemberInfo model = null) {
+            if (model == null && parentType != null) { model = parentType.GetMember(name).FirstOrDefault(); }
             Type modelType = GetModelType(model);
             JTokenType jTokenType = ToJTokenType(modelType, jpInstance);
             AssertV3.IsNotNull(jTokenType, "jTokenType");
@@ -209,7 +214,7 @@ namespace com.csutil.model.jsonschema {
                 return true;
             }
             if (IsSimpleType(t)) {
-                if (pInstance != null) {
+                if (pInstance != null && m != null) {
                     var value = m.GetValue(pInstance);
                     field.description = $"e.g. '{value}'";
                     if (useInstanceValAsDefault) { field.defaultVal = "" + value; }

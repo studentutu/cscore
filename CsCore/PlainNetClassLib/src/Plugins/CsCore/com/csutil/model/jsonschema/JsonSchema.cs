@@ -1,6 +1,6 @@
 using Newtonsoft.Json;
-using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace com.csutil.model.jsonschema {
 
@@ -79,10 +79,15 @@ namespace com.csutil.model.jsonschema {
         /// https://json-schema.org/understanding-json-schema/reference/generic.html#enumerated-values </summary>
         [JsonProperty("enum")]
         public string[] contentEnum;
-        
+
         public bool additionalProperties;
 
-        public static string ToTitle(string varName) { return RegexUtil.SplitCamelCaseString(varName); }
+        public static string ToTitle(string varName) {
+            var words = RegexUtil.SplitCamelCaseString(varName).Split(' ');
+            var words2 = words.SelectMany(x => x.Split('_'));
+            words2 = words2.Where(x => !x.IsNullOrEmpty());
+            return string.Join(" ", words2.Select(x => x.First().ToString().ToUpper() + x.Substring(1)));
+        }
 
     }
 

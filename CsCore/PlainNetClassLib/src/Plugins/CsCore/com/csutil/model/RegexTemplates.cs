@@ -46,7 +46,7 @@ namespace com.csutil.model {
 
     public static class RegexUtil {
 
-        private static Regex camelCaseSplitter = new Regex(@"(\B[A-Z]+?(?=[A-Z][^A-Z])|\B[A-Z]+?(?=[^A-Z]))");
+        private static Regex camelCaseSplitter = new Regex(@"(\B[A-Z]+?(?=[A-Z][^A-Z_])|\B[A-Z]+?(?=[^A-Z_]))", RegexOptions.Compiled);
 
         public static string SplitCamelCaseString(string camelCaseString) {
             return camelCaseSplitter.Replace(camelCaseString, " $1").ToFirstCharUpperCase();

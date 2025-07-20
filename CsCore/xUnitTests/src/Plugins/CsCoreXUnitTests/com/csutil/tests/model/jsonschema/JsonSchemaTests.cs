@@ -165,20 +165,39 @@ namespace com.csutil.tests.model.jsonschema {
         }
 
         [Fact]
-                public void TestGetJsonFieldName() {
-                    var model = new JsonFieldNameTestModel();
-                    var schemaGenerator = new ModelToJsonSchema();
-                    var schema = schemaGenerator.ToJsonSchema(nameof(JsonFieldNameTestModel), model);
-                    
-                    Assert.True(schema.properties.ContainsKey("custom_name"));
-                    Assert.True(schema.properties.ContainsKey("fieldWithoutAttribute"));
-                    
-                    Assert.Equal("Custom Name", schema.properties["custom_name"].title);
-                    Assert.Equal("Field Without Attribute", schema.properties["fieldWithoutAttribute"].title);
-                }
-        
-                
-        
+        public void TestToTitleHelperMethod() {
+            Assert.Equal("Custom Name", JsonSchema.ToTitle("CustomName"));
+            Assert.Equal("Custom Name", JsonSchema.ToTitle("customName"));
+            Assert.Equal("Custom Name", JsonSchema.ToTitle("Custom_Name"));
+            Assert.Equal("Custom Name", JsonSchema.ToTitle("Custom_name"));
+            Assert.Equal("Custom Name", JsonSchema.ToTitle("_Custom_name"));
+            Assert.Equal("Custom Name", JsonSchema.ToTitle("_custom_name"));
+            Assert.Equal("Custom Name", JsonSchema.ToTitle("custom__name"));
+        }
+
+        [Fact]
+        public void TestClassWithCustomJsonFieldName() {
+            var model = new ClassWithCustomJsonFieldName();
+            var schemaGenerator = new ModelToJsonSchema();
+            var schema = schemaGenerator.ToJsonSchema(nameof(ClassWithCustomJsonFieldName), model);
+
+            Assert.True(schema.properties.ContainsKey("custom_Name"));
+            Assert.True(schema.properties.ContainsKey("fieldWithoutAttribute"));
+
+            Assert.Equal("Custom Name", schema.properties["custom_Name"].title);
+            Assert.Equal("Field Without Attribute", schema.properties["fieldWithoutAttribute"].title);
+        }
+
+        private class ClassWithCustomJsonFieldName {
+
+            [JsonProperty("custom_Name")]
+            public string Name { get; set; }
+
+            public string fieldWithoutAttribute { get; set; }
+
+        }
+
+
         /// <summary>
         /// The following test uses the validator of System.ComponentModel to validate the model / object instance
         /// fields have values that are within the defined limits (enforced via the annotations on the model fields)
@@ -201,7 +220,7 @@ namespace com.csutil.tests.model.jsonschema {
             var isValid = Validator.TryValidateObject(user, new ValidationContext(user), validationResults, true);
             Assert.True(isValid, "User model should be valid, but was not: " + JsonWriter.GetWriter().Write(validationResults));
             Assert.Empty(validationResults); // No validation errors should be present
-            
+
             // Now test with an invalid user model:
             {
                 var invalidUser1 = new MyUserModel() {
@@ -303,15 +322,6 @@ namespace com.csutil.tests.model.jsonschema {
 
             [Enum("Level of experience 5", "Beginner", "Avg", "Expert")]
             public int experience5;
-
-        }
-
-        private class JsonFieldNameTestModel {
-
-            [JsonProperty("custom_name")]
-            public string Name { get; set; }
-
-            public string fieldWithoutAttribute { get; set; }
 
         }
 
