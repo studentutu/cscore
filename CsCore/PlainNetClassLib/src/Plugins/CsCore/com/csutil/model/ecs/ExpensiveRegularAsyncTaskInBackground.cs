@@ -37,19 +37,19 @@ namespace com.csutil.model.ecs {
             }
         }
 
-        public async Task WaitTillDone() {
+        public async Task WaitTillDone(int millisecondsDelay = 10) {
             while (!runningTasks.IsEmpty || !waitingTasks.IsEmpty) {
                 var tasksToWaitFor = runningTasks.Values;
                 if (tasksToWaitFor.IsEmpty()) {
                     // If there are no running tasks but still waiting tasks,
                     // a short delay is needed to allow the system to schedule the next task.
-                    await Task.Delay(10);
+                    await TaskV2.Delay(millisecondsDelay);
                 } else {
                     await Task.WhenAll(tasksToWaitFor);
                 }
             }
         }
-        
+
     }
 
 }

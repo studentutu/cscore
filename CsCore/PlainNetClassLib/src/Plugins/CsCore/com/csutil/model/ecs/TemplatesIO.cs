@@ -92,8 +92,8 @@ namespace com.csutil.model.ecs {
             });
         }
 
-        public Task WaitForAllSavedChanges() { return _taskQueue.WaitTillDone(); }
-        
+        public Task WaitForAllSavedChanges(int millisecondsDelay = 10) { return _taskQueue.WaitTillDone(millisecondsDelay); }
+
         // [Conditional("DEBUG")]
         // private void LogSaveChangesIfThereIsAQueue(T instance) {
         //     if (_taskQueue.GetRemainingScheduledTaskCount() % 50 == 0) {
