@@ -216,6 +216,10 @@ namespace com.csutil.model.jsonschema {
                 return true;
             }
             if (IsSimpleType(t)) {
+                if (modelType != null && modelType.IsEnum) {
+                    // For enum types never include a description
+                    return false;
+                }
                 if (pInstance != null && m != null) {
                     var value = m.GetValue(pInstance);
                     field.description = $"e.g. '{value}'";
@@ -228,8 +232,7 @@ namespace com.csutil.model.jsonschema {
                     return true;
                 }
                 if (t == JTokenType.Integer) {
-                    if (modelType != null && modelType.IsEnum) { return false; }
-                    field.description = "e.g. 99";
+                    field.description = "e.g. 1234";
                     return true;
                 }
                 if (t == JTokenType.Float) {
