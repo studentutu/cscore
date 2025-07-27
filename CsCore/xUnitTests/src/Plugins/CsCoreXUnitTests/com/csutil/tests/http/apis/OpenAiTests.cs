@@ -155,6 +155,34 @@ namespace com.csutil.integrationTests.http {
             }
         }
 
+        [Fact]
+        public async Task ExampleUsage3_StrictJsonSchemaResponses2() {
+            // This tests tests additional json schema features like enums, arrays, ..
+            var openAi = new OpenAi(await IoC.inject.GetAppSecrets().GetSecret("OpenAiKey"));
+            var messages = new List<ChatGpt.Message>();
+            messages.Add(new ChatGpt.Message(ChatGpt.Role.system, content: "You are a helpful assistant designed to output JSON."));
+
+            // Create an example object so that the AI knows how the response json should look like for user inputs:
+            var exampleInstance = new JsonSchemaExampleClass() { emotionOfResponse = JsonSchemaExampleClass.Emotion.happy };
+            var request = NewGpt4StrictJsonRequestWithFullConversation(messages, exampleInstance);
+
+            Log.d("JSON schema of required response_format:\n" + JsonWriter.AsPrettyString(request.response_format));
+            var response = await openAi.ChatGpt(request);
+            ChatGpt.Message newLine = response.choices.Single().message;
+            var parsedResponse = newLine.ParseNewLineContentAsJson<JsonSchemaExampleClass>();
+            Log.d(parsedResponse.emotionOfResponse.ToString());
+
+        }
+
+        private class JsonSchemaExampleClass {
+            
+            [System.ComponentModel.DataAnnotations.Required]
+            public Emotion emotionOfResponse;
+            
+            public enum Emotion { happy = 0, sad = 2, angry = 4, neutral = 8 }
+            
+        }
+
         #if RUN_EXPENSIVE_TESTS
         [Fact]
         #endif
