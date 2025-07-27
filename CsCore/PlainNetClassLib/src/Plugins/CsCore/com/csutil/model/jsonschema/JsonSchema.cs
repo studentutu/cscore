@@ -83,13 +83,11 @@ namespace com.csutil.model.jsonschema {
         public bool additionalProperties;
 
         public static string ToTitle(string varName) {
-            var words = RegexUtil.SplitCamelCaseString(varName).Split(' ');
-            var words2 = words.SelectMany(x => x.Split('_'));
-            words2 = words2.Where(x => !x.IsNullOrEmpty());
-            return string.Join(" ", words2.Select(x => {
-                if (x.Length > 1) { return x.First().ToString().ToUpper() + x.Substring(1); }
-                return x;
-            }));
+            var words = RegexUtil.SplitCamelCaseString(varName)
+                .Split(' ').SelectMany(x => x.Split('_'))
+                .Where(x => !x.IsNullOrEmpty())
+                .Select(x => char.ToUpper(x[0]) + x.Substring(1));
+            return string.Join(" ", words);
         }
 
     }
