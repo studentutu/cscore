@@ -64,7 +64,7 @@ namespace com.csutil.model.jsonschema {
 
         /// <summary> If the field is an object it has a view model itself, see also
         /// https://json-schema.org/understanding-json-schema/reference/array.html#items </summary>
-        public List<JsonSchema> items;
+        public Items items;
 
         /// <summary> If true items is a set so it can only contain unique items, see also
         /// https://json-schema.org/understanding-json-schema/reference/array.html#uniqueness </summary>
@@ -88,6 +88,13 @@ namespace com.csutil.model.jsonschema {
             words2 = words2.Where(x => !x.IsNullOrEmpty());
             return string.Join(" ", words2.Select(x => x.First().ToString().ToUpper() + x.Substring(1)));
         }
+
+    }
+
+    public class Items {
+
+        /// <summary> The instance is valid if it matches at least one of the listed schemas. Multiple matches are fine </summary>
+        public List<JsonSchema> anyOf;
 
     }
 

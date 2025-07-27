@@ -178,18 +178,20 @@ namespace com.csutil.model.jsonschema {
                             var firstChildInstance = childrenInstances?.FirstOrDefault();
                             var childVm = new JsonSchema() { type = arrayElemJType.ToJsonSchemaType() };
                             SetupInnerJsonSchema(childVm, listElemType, firstChildInstance);
-                            newField.items = new List<JsonSchema>() { childVm };
+                            newField.items = new Items { anyOf = new List<JsonSchema>() { childVm } };
                         } else {
-                            newField.items = new List<JsonSchema>();
+                            newField.items = new Items { anyOf = new List<JsonSchema>() };
                             foreach (var child in childrenInstances) {
                                 var childVm = new JsonSchema() { type = arrayElemJType.ToJsonSchemaType() };
                                 SetupInnerJsonSchema(childVm, child.GetType(), child);
-                                newField.items.Add(childVm);
+                                newField.items.anyOf.Add(childVm);
                             }
-                            AssertV3.AreEqual(childrenInstances.Length, newField.items.Count);
+                            AssertV3.AreEqual(childrenInstances.Length, newField.items.anyOf.Count);
                         }
                     } else {
-                        newField.items = new List<JsonSchema>() { new JsonSchema() { type = arrayElemJType.ToJsonSchemaType() } };
+                        newField.items = new Items {
+                            anyOf = new List<JsonSchema>() { new JsonSchema() { type = arrayElemJType.ToJsonSchemaType() } }
+                        };
                     }
                 }
             }

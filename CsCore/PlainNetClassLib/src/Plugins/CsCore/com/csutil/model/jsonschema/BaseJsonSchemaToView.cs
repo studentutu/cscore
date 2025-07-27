@@ -63,8 +63,8 @@ namespace com.csutil.model.jsonschema {
             }
             if (type == JTokenType.Array) {
                 var e = field.items;
-                if (e.Count == 1) {
-                    JsonSchema item = e.First();
+                if (e.anyOf.Count == 1) {
+                    JsonSchema item = e.anyOf.First();
                     var childJType = item.GetJTokenType();
                     if (schemaGenerator.IsSimpleType(childJType)) {
                         return await AddAndInit(parentView, field, fieldName, await NewListFieldView(field));

@@ -39,8 +39,8 @@ namespace com.csutil.tests.model.jsonschema {
             Assert.Equal(2, schema.required.Count);
 
             Assert.Equal("array", schema.properties["tags"].type);
-            Assert.Equal("string", schema.properties["tags"].items.First().type);
-            Assert.Null(schema.properties["tags"].items.First().properties);
+            Assert.Equal("string", schema.properties["tags"].items.anyOf.First().type);
+            Assert.Null(schema.properties["tags"].items.anyOf.First().properties);
 
             Assert.Equal("array", schema.properties["contacts"].type);
             Assert.True(schema.properties["id"].readOnly.Value); // id has private setter
@@ -48,11 +48,11 @@ namespace com.csutil.tests.model.jsonschema {
 
             Assert.Equal(30, schema.properties["name"].maxLength);
 
-            Assert.Equal("object", schema.properties["contacts"].items.First().type);
+            Assert.Equal("object", schema.properties["contacts"].items.anyOf.First().type);
             // Contacts schema already resolve as part of the bestFried field, so here no properties are included:
-            Assert.Null(schema.properties["contacts"].items.First().properties);
+            Assert.Null(schema.properties["contacts"].items.anyOf.First().properties);
 
-            var entrySchema = schema.properties["contacts"].items.First();
+            var entrySchema = schema.properties["contacts"].items.anyOf.First();
             Assert.Equal("" + typeof(MyUserModel.UserContact), entrySchema.modelType);
             Assert.Null(entrySchema.properties);
 
@@ -120,7 +120,7 @@ namespace com.csutil.tests.model.jsonschema {
             Log.d(JsonWriter.AsPrettyString(schema));
 
             Assert.Equal("Age", schema.properties["user"].properties["age"].title);
-            Assert.Equal("integer", schema.properties["phoneNumbers"].items.First().type);
+            Assert.Equal("integer", schema.properties["phoneNumbers"].items.anyOf.First().type);
 
         }
 

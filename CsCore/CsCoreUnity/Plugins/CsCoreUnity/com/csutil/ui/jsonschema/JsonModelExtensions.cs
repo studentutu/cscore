@@ -210,7 +210,7 @@ namespace com.csutil.ui.jsonschema {
 
         private static void SetupButtons(ListFieldView listView, JObject root, JsonSchemaToView viewGenerator, JArray modelArray, Dictionary<FieldView, JToken> map) {
             listView.add.SetOnClickAction(async delegate {
-                JToken entry = listView.field.items.First().NewDefaultJInstance();
+                JToken entry = listView.field.items.anyOf.First().NewDefaultJInstance();
                 modelArray.Add(entry);
                 var fieldName = "" + (modelArray.Count - 1);
                 var fv = await CreateChildEntryView(listView, root, viewGenerator, entry, fieldName);
@@ -256,7 +256,7 @@ namespace com.csutil.ui.jsonschema {
 
         private static async Task<FieldView> CreateChildEntryView(
                 ListFieldView self, JObject root, JsonSchemaToView viewGenerator, JToken modelEntry, string fieldName) {
-            JsonSchema newEntryVm = GetMatchingSchema(modelEntry, self.field.items);
+            JsonSchema newEntryVm = GetMatchingSchema(modelEntry, self.field.items.anyOf);
             GameObject childView = await AddChildEntryView(self, viewGenerator, fieldName, newEntryVm);
             await childView.LinkToJsonModel(root, viewGenerator);
             return childView.GetComponentInChildren<FieldView>();
