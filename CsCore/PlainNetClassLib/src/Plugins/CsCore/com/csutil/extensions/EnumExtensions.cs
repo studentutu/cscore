@@ -68,10 +68,20 @@ namespace com.csutil {
                 int entryAsInt = (int)(object)entry;
                 if (entryAsInt == 0) { continue; } // 0 is always a power of two
                 if ((entryAsInt & (entryAsInt - 1)) != 0) { // Check if the entry is a power of two:
-                    Log.w($"Enum {typeof(T)} cant be used with .ContainsFlag() because not all entries are a power of two, e.g. {entry}={entryAsInt}! "
-                        + $"This error should only be ignored if you have enum entries that are composed from other enum entries (eg MyEnum.A = MyEnum.B | MyEnum.C)");
+                    var enumType = typeof(T);
+                    if (!onBlacklist(enumType)) {
+                        Log.w($"Enum {enumType} cant be used with .ContainsFlag() because not all entries are a power of two, e.g. {entry}={entryAsInt}! "
+                            + $"This error should only be ignored if you have enum entries that are composed from other enum entries (eg MyEnum.A = MyEnum.B | MyEnum.C)");
+                    }
                 }
             }
+        }
+        
+        private static bool onBlacklist(Type enumType) {
+            // Anything in the System namespace is on the blacklist, as the dev has no control over these enums anyways:
+            if (enumType.Namespace.StartsWith("System")) { return true; }
+            // Add more types to the blacklist here if needed
+            return false; 
         }
 
         public static string GetEntryName<T>(this T entry) where T : struct
