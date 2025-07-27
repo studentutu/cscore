@@ -173,6 +173,11 @@ namespace com.csutil.tests.model.jsonschema {
             Assert.Equal("Custom Name", JsonSchema.ToTitle("_Custom_name"));
             Assert.Equal("Custom Name", JsonSchema.ToTitle("_custom_name"));
             Assert.Equal("Custom Name", JsonSchema.ToTitle("custom__name"));
+            Assert.Equal("Custom Name 2", JsonSchema.ToTitle("customName2"));
+            Assert.Equal("Custom Name 22", JsonSchema.ToTitle("customName_22"));
+            Assert.Equal("2 Custom Name", JsonSchema.ToTitle("2CustomName"));
+            Assert.Equal("Custom 2 Name", JsonSchema.ToTitle("Custom2Name"));
+            Assert.Equal("Custom 22 Name", JsonSchema.ToTitle("Custom_22_Name"));
         }
 
         [Fact]

@@ -86,7 +86,10 @@ namespace com.csutil.model.jsonschema {
             var words = RegexUtil.SplitCamelCaseString(varName).Split(' ');
             var words2 = words.SelectMany(x => x.Split('_'));
             words2 = words2.Where(x => !x.IsNullOrEmpty());
-            return string.Join(" ", words2.Select(x => x.First().ToString().ToUpper() + x.Substring(1)));
+            return string.Join(" ", words2.Select(x => {
+                if (x.Length > 1) { return x.First().ToString().ToUpper() + x.Substring(1); }
+                return x;
+            }));
         }
 
     }
