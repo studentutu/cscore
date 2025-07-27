@@ -212,6 +212,13 @@ namespace com.csutil.http.apis {
             /// <summary> https://platform.openai.com/docs/api-reference/chat/create#chat-create-temperature </summary>
             public double? temperature { get; set; }
 
+            /// <summary>
+            /// An upper bound for the number of tokens that can be generated for a completion,
+            /// including visible output tokens and reasoning tokens. See also
+            /// https://platform.openai.com/docs/api-reference/chat/create#chat-create-max_completion_tokens
+            /// </summary>
+            public int? max_completion_tokens { get; set; } = null;
+            
             /// <summary> Number of desired <see cref="Response.choices"/> to be returned, defaults to 1.
             /// See also https://platform.openai.com/docs/api-reference/chat/create#chat-create-n </summary>
             public int? n { get; set; } = null;
@@ -362,20 +369,18 @@ namespace com.csutil.http.apis {
             /// <summary> See https://beta.openai.com/docs/models/overview </summary>
             public string model = "gpt-4o";
 
-            /// <summary> The maximum number of tokens to generate in the completion.
-            /// The token count of your prompt plus max_tokens cannot exceed the model's context length.
-            /// Most models have a context length of 2048 tokens (except for the newest models, which support 4096). </summary>
-            public int max_tokens { get; set; }
+            /// <summary>
+            /// An upper bound for the number of tokens that can be generated for a completion,
+            /// including visible output tokens and reasoning tokens. See also
+            /// https://platform.openai.com/docs/api-reference/chat/create#chat-create-max_completion_tokens
+            /// </summary>
+            public int? max_completion_tokens { get; set; } = null;
             public List<Line> messages { get; set; }
 
-            public Request(List<Line> messages, int max_tokens = 4096) {
-                var tokenCountForMessages = JsonWriter.GetWriter(this).Write(messages).Length;
-                if (max_tokens + tokenCountForMessages > 4096) {
-                    max_tokens = 4096 - tokenCountForMessages;
-                }
+            public Request(List<Line> messages) {
                 this.messages = messages;
-                this.max_tokens = max_tokens;
             }
+            
         }
 
         public class Response {
