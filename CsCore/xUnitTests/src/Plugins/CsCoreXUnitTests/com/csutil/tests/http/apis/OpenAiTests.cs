@@ -178,7 +178,11 @@ namespace com.csutil.integrationTests.http {
 
             var request = new ChatGpt.Request(messages);
             // Create an example object so that the AI knows how the response json should look like for user inputs:
-            var exampleResponse = new JsonSchemaExampleClass() { emotionOfResponse2 = JsonSchemaExampleClass.Emotion.happy };
+            var exampleResponse = new JsonSchemaExampleClass() {
+                emotionOfResponse2 = JsonSchemaExampleClass.Emotion.happy,
+                listOfStrings = new List<string> { "string1", "string2" },
+                listOfEnums = new List<JsonSchemaExampleClass.Emotion> { JsonSchemaExampleClass.Emotion.happy, JsonSchemaExampleClass.Emotion.sad }
+            };
             request.SetResponseFormatToJsonSchema(exampleResponse); // Use json schema as the response format
 
             await SendStrictJsonSchemaRequestToOpenAi(request, openAi);
@@ -190,8 +194,8 @@ namespace com.csutil.integrationTests.http {
             var response = await openAi.ChatGpt(request);
             ChatGpt.Message newLine = response.choices.Single().message;
             var parsedResponse = newLine.ParseNewLineContentAsJson<JsonSchemaExampleClass>();
-            Log.d(parsedResponse.emotionOfResponse.ToString());
             Assert.NotNull(parsedResponse.emotionOfResponse2);
+            Log.d(JsonWriter.AsPrettyString(parsedResponse));
         }
 
         private class JsonSchemaExampleClass {
@@ -203,7 +207,13 @@ namespace com.csutil.integrationTests.http {
             public Emotion? emotionOfResponse2;
 
             public enum Emotion { happy = 0, sad = 2, angry = 4, neutral = 8 }
+            
+            [System.ComponentModel.DataAnnotations.Required]
+            public List<string> listOfStrings;
 
+            [System.ComponentModel.DataAnnotations.Required]
+            public List<Emotion> listOfEnums;
+            
         }
 
         #if RUN_EXPENSIVE_TESTS
