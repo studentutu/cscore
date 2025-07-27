@@ -31,6 +31,7 @@ namespace com.csutil.model.jsonschema {
         public ModelToJsonSchema(NullValueHandling nullValueHandling) {
             var jsonSettings = JsonNetSettings.defaultSettings;
             jsonSettings.NullValueHandling = nullValueHandling;
+            jsonSettings.Converters.Add(new Newtonsoft.Json.Converters.StringEnumConverter());
             jsonSerializer = JsonSerializer.Create(jsonSettings);
         }
 
@@ -275,7 +276,7 @@ namespace com.csutil.model.jsonschema {
             if (elemType.IsCastableTo<string>()) { return JTokenType.String; }
             if (elemType.IsCastableTo<IDictionary>()) { return JTokenType.Object; }
             if (elemType.IsCastableTo<IEnumerable>()) { return JTokenType.Array; }
-            if (elemType.IsEnum) { return JTokenType.Integer; }
+            if (elemType.IsEnum) { return JTokenType.String; }
             return JTokenType.Object;
         }
 

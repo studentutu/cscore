@@ -443,6 +443,14 @@ namespace com.csutil.http.apis {
             self.response_format = ChatGpt.Request.ResponseFormat.NewJsonSchema(schemaName, jsonSchema);
         }
         
+        public static void SetResponseFormatToJsonSchema<T>(this ChatGpt.Request self) {
+            ModelToJsonSchema schemaGenerator = new ModelToJsonSchema(nullValueHandling: NullValueHandling.Ignore);
+            Type type = typeof(T);
+            string className = type.Name;
+            JsonSchema jsonSchema = schemaGenerator.ToJsonSchema(className, type);
+            self.response_format = ChatGpt.Request.ResponseFormat.NewJsonSchema(className, jsonSchema);
+        }
+        
         public static JsonSchema CreateJsonSchema<T>(T exampleResponse) {
             var schemaGenerator = new ModelToJsonSchema(nullValueHandling: NullValueHandling.Ignore);
             var className = typeof(T).Name;
