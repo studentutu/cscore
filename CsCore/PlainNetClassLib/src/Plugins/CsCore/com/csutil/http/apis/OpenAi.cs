@@ -7,6 +7,8 @@ using com.csutil.model.jsonschema;
 using Newtonsoft.Json;
 using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
+using com.csutil.model;
 using Zio;
 
 namespace com.csutil.http.apis {
@@ -210,11 +212,13 @@ namespace com.csutil.http.apis {
             /// <summary> https://platform.openai.com/docs/api-reference/chat/create#chat-create-temperature </summary>
             public double? temperature { get; set; }
 
-            /// <summary> The maximum number of tokens to generate in the completion.
-            /// The token count of your prompt plus max_tokens cannot exceed the model's context length.
-            /// Most models have a context length of 2048 tokens (except for the newest models, which support 4096). </summary>
-            public int max_tokens { get; set; }
-
+            /// <summary>
+            /// An upper bound for the number of tokens that can be generated for a completion,
+            /// including visible output tokens and reasoning tokens. See also
+            /// https://platform.openai.com/docs/api-reference/chat/create#chat-create-max_completion_tokens
+            /// </summary>
+            public int? max_completion_tokens { get; set; } = null;
+            
             /// <summary> Number of desired <see cref="Response.choices"/> to be returned, defaults to 1.
             /// See also https://platform.openai.com/docs/api-reference/chat/create#chat-create-n </summary>
             public int? n { get; set; } = null;
@@ -230,13 +234,8 @@ namespace com.csutil.http.apis {
             /// <summary> typically null, but if the AI e.g. should respond only with json it should be ChatGpt.Request.ResponseFormat.json </summary>
             public ResponseFormat response_format { get; set; }
 
-            public Request(List<Message> messages, int max_tokens = 4096) {
-                var tokenCountForMessages = JsonWriter.GetWriter(this).Write(messages).Length;
-                if (max_tokens + tokenCountForMessages > 4096) {
-                    max_tokens = 4096 - tokenCountForMessages;
-                }
+            public Request(List<Message> messages) {
                 this.messages = messages;
-                this.max_tokens = max_tokens;
             }
 
             /// <summary> https://platform.openai.com/docs/guides/audio/quickstart?audio-generation-quickstart-example=audio-out </summary>
@@ -257,10 +256,15 @@ namespace com.csutil.http.apis {
                 public static ResponseFormat json => new ResponseFormat() { type = "json_object" };
 
                 /// <summary> See https://platform.openai.com/docs/guides/structured-outputs/how-to-use </summary>
-                public static ResponseFormat NewJsonSchema(string name, JsonSchema schema) => new ResponseFormat() {
-                    type = "json_schema",
-                    json_schema = new JsonSchemaResponse(name, schema, strict: true)
-                };
+                public static ResponseFormat NewJsonSchema(string name, JsonSchema schema) {
+                    if (schema.additionalProperties) {
+                        throw new ArgumentException($"Invalid schema: {name} has 'additionalProperties' set to true, but this is not supported in strict json schema mode.");
+                    }
+                    return new ResponseFormat() {
+                        type = "json_schema",
+                        json_schema = new JsonSchemaResponse(name, schema, strict: true)
+                    };
+                }
 
                 public string type { get; set; }
 
@@ -282,6 +286,12 @@ namespace com.csutil.http.apis {
                         this.name = name;
                         this.schema = schema;
                         this.strict = strict;
+                        if (!Regex.IsMatch(name, "^[a-zA-Z0-9_-]+$")) { // name must match the pattern '^[a-zA-Z0-9_-]+$' so verify that here:
+                            throw new ArgumentException($"Invalid 'response_format.json_schema.name': {name} does not match pattern. Expected a string that matches the pattern '^[a-zA-Z0-9_-]+$'.");
+                        }
+                        if (schema.type != "object") {
+                            throw new ArgumentException($"Invalid schema.type: {schema.type} is not supported, expected 'object'.");
+                        }
                     }
 
                 }
@@ -359,20 +369,18 @@ namespace com.csutil.http.apis {
             /// <summary> See https://beta.openai.com/docs/models/overview </summary>
             public string model = "gpt-4o";
 
-            /// <summary> The maximum number of tokens to generate in the completion.
-            /// The token count of your prompt plus max_tokens cannot exceed the model's context length.
-            /// Most models have a context length of 2048 tokens (except for the newest models, which support 4096). </summary>
-            public int max_tokens { get; set; }
+            /// <summary>
+            /// An upper bound for the number of tokens that can be generated for a completion,
+            /// including visible output tokens and reasoning tokens. See also
+            /// https://platform.openai.com/docs/api-reference/chat/create#chat-create-max_completion_tokens
+            /// </summary>
+            public int? max_completion_tokens { get; set; } = null;
             public List<Line> messages { get; set; }
 
-            public Request(List<Line> messages, int max_tokens = 4096) {
-                var tokenCountForMessages = JsonWriter.GetWriter(this).Write(messages).Length;
-                if (max_tokens + tokenCountForMessages > 4096) {
-                    max_tokens = 4096 - tokenCountForMessages;
-                }
+            public Request(List<Line> messages) {
                 this.messages = messages;
-                this.max_tokens = max_tokens;
             }
+            
         }
 
         public class Response {
@@ -438,6 +446,14 @@ namespace com.csutil.http.apis {
             var schemaName = exampleResponse.GetType().Name;
             var jsonSchema = CreateJsonSchema(exampleResponse);
             self.response_format = ChatGpt.Request.ResponseFormat.NewJsonSchema(schemaName, jsonSchema);
+        }
+        
+        public static void SetResponseFormatToJsonSchema<T>(this ChatGpt.Request self) {
+            ModelToJsonSchema schemaGenerator = new ModelToJsonSchema(nullValueHandling: NullValueHandling.Ignore);
+            Type type = typeof(T);
+            string className = type.Name;
+            JsonSchema jsonSchema = schemaGenerator.ToJsonSchema(className, type);
+            self.response_format = ChatGpt.Request.ResponseFormat.NewJsonSchema(className, jsonSchema);
         }
         
         public static JsonSchema CreateJsonSchema<T>(T exampleResponse) {

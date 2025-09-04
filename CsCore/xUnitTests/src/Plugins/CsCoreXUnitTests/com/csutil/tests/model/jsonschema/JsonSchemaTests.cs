@@ -39,8 +39,8 @@ namespace com.csutil.tests.model.jsonschema {
             Assert.Equal(2, schema.required.Count);
 
             Assert.Equal("array", schema.properties["tags"].type);
-            Assert.Equal("string", schema.properties["tags"].items.First().type);
-            Assert.Null(schema.properties["tags"].items.First().properties);
+            Assert.Equal("string", schema.properties["tags"].items.anyOf.First().type);
+            Assert.Null(schema.properties["tags"].items.anyOf.First().properties);
 
             Assert.Equal("array", schema.properties["contacts"].type);
             Assert.True(schema.properties["id"].readOnly.Value); // id has private setter
@@ -48,11 +48,11 @@ namespace com.csutil.tests.model.jsonschema {
 
             Assert.Equal(30, schema.properties["name"].maxLength);
 
-            Assert.Equal("object", schema.properties["contacts"].items.First().type);
+            Assert.Equal("object", schema.properties["contacts"].items.anyOf.First().type);
             // Contacts schema already resolve as part of the bestFried field, so here no properties are included:
-            Assert.Null(schema.properties["contacts"].items.First().properties);
+            Assert.Null(schema.properties["contacts"].items.anyOf.First().properties);
 
-            var entrySchema = schema.properties["contacts"].items.First();
+            var entrySchema = schema.properties["contacts"].items.anyOf.First();
             Assert.Equal("" + typeof(MyUserModel.UserContact), entrySchema.modelType);
             Assert.Null(entrySchema.properties);
 
@@ -120,7 +120,7 @@ namespace com.csutil.tests.model.jsonschema {
             Log.d(JsonWriter.AsPrettyString(schema));
 
             Assert.Equal("Age", schema.properties["user"].properties["age"].title);
-            Assert.Equal("integer", schema.properties["phoneNumbers"].items.First().type);
+            Assert.Equal("integer", schema.properties["phoneNumbers"].items.anyOf.First().type);
 
         }
 
@@ -164,6 +164,45 @@ namespace com.csutil.tests.model.jsonschema {
 
         }
 
+        [Fact]
+        public void TestToTitleHelperMethod() {
+            Assert.Equal("Custom Name", JsonSchema.ToTitle("CustomName"));
+            Assert.Equal("Custom Name", JsonSchema.ToTitle("customName"));
+            Assert.Equal("Custom Name", JsonSchema.ToTitle("Custom_Name"));
+            Assert.Equal("Custom Name", JsonSchema.ToTitle("Custom_name"));
+            Assert.Equal("Custom Name", JsonSchema.ToTitle("_Custom_name"));
+            Assert.Equal("Custom Name", JsonSchema.ToTitle("_custom_name"));
+            Assert.Equal("Custom Name", JsonSchema.ToTitle("custom__name"));
+            Assert.Equal("Custom Name 2", JsonSchema.ToTitle("customName2"));
+            Assert.Equal("Custom Name 22", JsonSchema.ToTitle("customName_22"));
+            Assert.Equal("2 Custom Name", JsonSchema.ToTitle("2CustomName"));
+            Assert.Equal("Custom 2 Name", JsonSchema.ToTitle("Custom2Name"));
+            Assert.Equal("Custom 22 Name", JsonSchema.ToTitle("Custom_22_Name"));
+        }
+
+        [Fact]
+        public void TestClassWithCustomJsonFieldName() {
+            var model = new ClassWithCustomJsonFieldName();
+            var schemaGenerator = new ModelToJsonSchema();
+            var schema = schemaGenerator.ToJsonSchema(nameof(ClassWithCustomJsonFieldName), model);
+
+            Assert.True(schema.properties.ContainsKey("custom_Name"));
+            Assert.True(schema.properties.ContainsKey("fieldWithoutAttribute"));
+
+            Assert.Equal("Custom Name", schema.properties["custom_Name"].title);
+            Assert.Equal("Field Without Attribute", schema.properties["fieldWithoutAttribute"].title);
+        }
+
+        private class ClassWithCustomJsonFieldName {
+
+            [JsonProperty("custom_Name")]
+            public string Name { get; set; }
+
+            public string fieldWithoutAttribute { get; set; }
+
+        }
+
+
         /// <summary>
         /// The following test uses the validator of System.ComponentModel to validate the model / object instance
         /// fields have values that are within the defined limits (enforced via the annotations on the model fields)
@@ -186,7 +225,7 @@ namespace com.csutil.tests.model.jsonschema {
             var isValid = Validator.TryValidateObject(user, new ValidationContext(user), validationResults, true);
             Assert.True(isValid, "User model should be valid, but was not: " + JsonWriter.GetWriter().Write(validationResults));
             Assert.Empty(validationResults); // No validation errors should be present
-            
+
             // Now test with an invalid user model:
             {
                 var invalidUser1 = new MyUserModel() {

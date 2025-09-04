@@ -1,0 +1,66 @@
+name: .NET Tests (Safe Caching + Reporting + Exclude IntegrationTests)
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read  # always minimal
+  checks: write   # needed to post check run
+  pull-requests: none
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      checks: write
+      pull-requests: none
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: '8.0.x'
+          cache: true
+          cache-dependency-path: |
+            **/*.csproj
+            Directory.Packages.props
+
+      - name: Restore dependencies
+        run: dotnet restore CsCore/CsCore.sln
+
+      - name: Build solution
+        run: dotnet build CsCore/CsCore.sln --no-restore
+
+      - name: Run xUnit tests (exclude integrationTests)
+        run: >
+          dotnet test CsCore/xUnitTests/xUnitTests.csproj
+          --no-build
+          --verbosity normal
+          --logger "trx;LogFileName=test-results.trx"
+          --filter "FullyQualifiedName\!~integrationTests"
+
+  report:
+    needs: build-test
+    if: github.event_name != 'pull_request'
+        || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      checks: write
+      pull-requests: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Upload and annotate test results
+        uses: dorny/test-reporter@v1
+        with:
+          name: Test Results
+          path: '**/*.trx'
+          reporter: dotnet-trx
+          fail-on-error: 'true'
+

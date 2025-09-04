@@ -31,6 +31,7 @@ namespace com.csutil.model.jsonschema {
         public ModelToJsonSchema(NullValueHandling nullValueHandling) {
             var jsonSettings = JsonNetSettings.defaultSettings;
             jsonSettings.NullValueHandling = nullValueHandling;
+            jsonSettings.Converters.Add(new Newtonsoft.Json.Converters.StringEnumConverter());
             jsonSerializer = JsonSerializer.Create(jsonSettings);
         }
 
@@ -71,6 +72,7 @@ namespace com.csutil.model.jsonschema {
             }
             var req = schema.properties.Filter(f => f.Value.mandatory == true).Map(f => f.Key);
             if (!req.IsNullOrEmpty()) { schema.required = req.ToList(); }
+            schema.description = modelType.GetCustomAttribute<System.ComponentModel.DescriptionAttribute>(true)?.Description;
             return schema;
         }
 
@@ -85,25 +87,32 @@ namespace com.csutil.model.jsonschema {
             foreach (var member in modelType.GetMembers()) {
                 if (member is FieldInfo || member is PropertyInfo) {
                     var fieldName = member.Name;
-                    schema.properties.Add(fieldName, NewField(fieldName, modelType));
+                    var jsonFieldName = GetJsonFieldName(fieldName, member);
+                    schema.properties.Add(jsonFieldName, NewField(fieldName, modelType));
                 }
             }
         }
 
         private void AddFieldsViaJson(JsonSchema schema, object model, IEnumerable<KeyValuePair<string, JToken>> jsonModel) {
+            var modelType = model?.GetType();
             foreach (var property in jsonModel) {
-                schema.properties.Add(property.Key, NewField(property.Key, model?.GetType(), model, property.Value));
+                MemberInfo member = null;
+                if (modelType != null && property.Value is JValue jv && jv.Parent is JProperty jp) {
+                    member = modelType.GetMember(jp.Name).FirstOrDefault();
+                }
+                schema.properties.Add(property.Key, NewField(property.Key, modelType, model, property.Value, member));
             }
         }
 
         public JObject ToJsonModel(object model) { return JObject.FromObject(model, jsonSerializer); }
 
-        public virtual JsonSchema NewField(string name, Type parentType, object pInstance = null, JToken jpInstance = null) {
-            MemberInfo model = parentType?.GetMember(name).First();
+        public virtual JsonSchema NewField(string name, Type parentType, object pInstance = null, JToken jpInstance = null, MemberInfo model = null) {
+            if (model == null && parentType != null) { model = parentType.GetMember(name).FirstOrDefault(); }
             Type modelType = GetModelType(model);
             JTokenType jTokenType = ToJTokenType(modelType, jpInstance);
             AssertV3.IsNotNull(jTokenType, "jTokenType");
-            JsonSchema newField = new JsonSchema() { type = jTokenType.ToJsonSchemaType(), title = JsonSchema.ToTitle(name) };
+            var jsonFieldName = model == null ? name : GetJsonFieldName(name, model);
+            JsonSchema newField = new JsonSchema() { type = jTokenType.ToJsonSchemaType(), title = JsonSchema.ToTitle(jsonFieldName) };
             ExtractFieldDocu(newField, model, modelType, jTokenType, pInstance, jpInstance);
             if (model != null) {
                 if (!model.CanWriteTo()) { newField.readOnly = true; }
@@ -170,22 +179,32 @@ namespace com.csutil.model.jsonschema {
                             var firstChildInstance = childrenInstances?.FirstOrDefault();
                             var childVm = new JsonSchema() { type = arrayElemJType.ToJsonSchemaType() };
                             SetupInnerJsonSchema(childVm, listElemType, firstChildInstance);
-                            newField.items = new List<JsonSchema>() { childVm };
+                            newField.items = new Items { anyOf = new List<JsonSchema>() { childVm } };
                         } else {
-                            newField.items = new List<JsonSchema>();
+                            newField.items = new Items { anyOf = new List<JsonSchema>() };
                             foreach (var child in childrenInstances) {
                                 var childVm = new JsonSchema() { type = arrayElemJType.ToJsonSchemaType() };
                                 SetupInnerJsonSchema(childVm, child.GetType(), child);
-                                newField.items.Add(childVm);
+                                newField.items.anyOf.Add(childVm);
                             }
-                            AssertV3.AreEqual(childrenInstances.Length, newField.items.Count);
+                            AssertV3.AreEqual(childrenInstances.Length, newField.items.anyOf.Count);
                         }
                     } else {
-                        newField.items = new List<JsonSchema>() { new JsonSchema() { type = arrayElemJType.ToJsonSchemaType() } };
+                        newField.items = new Items {
+                            anyOf = new List<JsonSchema>() { new JsonSchema() { type = arrayElemJType.ToJsonSchemaType() } }
+                        };
                     }
                 }
             }
             return newField;
+        }
+
+        private static string GetJsonFieldName(string memberInfoName, MemberInfo memberInfo) {
+            memberInfo.ThrowErrorIfNull("memberInfo");
+            var jsonPropertyAttr = memberInfo.GetCustomAttribute<JsonPropertyAttribute>();
+            var jsonPropAttrDefinesJsonFieldName = (jsonPropertyAttr != null && !string.IsNullOrEmpty(jsonPropertyAttr.PropertyName));
+            var jsonFieldName = jsonPropAttrDefinesJsonFieldName ? jsonPropertyAttr.PropertyName : memberInfoName;
+            return jsonFieldName;
         }
 
         public virtual bool ExtractFieldDocu(JsonSchema field, MemberInfo m, Type modelType, JTokenType t, object pInstance, JToken jpInstance) {
@@ -198,7 +217,11 @@ namespace com.csutil.model.jsonschema {
                 return true;
             }
             if (IsSimpleType(t)) {
-                if (pInstance != null) {
+                if (modelType != null && modelType.IsEnum) {
+                    // For enum types never include a description
+                    return false;
+                }
+                if (pInstance != null && m != null) {
                     var value = m.GetValue(pInstance);
                     field.description = $"e.g. '{value}'";
                     if (useInstanceValAsDefault) { field.defaultVal = "" + value; }
@@ -210,8 +233,7 @@ namespace com.csutil.model.jsonschema {
                     return true;
                 }
                 if (t == JTokenType.Integer) {
-                    if (modelType != null && modelType.IsEnum) { return false; }
-                    field.description = "e.g. 99";
+                    field.description = "e.g. 1234";
                     return true;
                 }
                 if (t == JTokenType.Float) {
@@ -254,7 +276,7 @@ namespace com.csutil.model.jsonschema {
             if (elemType.IsCastableTo<string>()) { return JTokenType.String; }
             if (elemType.IsCastableTo<IDictionary>()) { return JTokenType.Object; }
             if (elemType.IsCastableTo<IEnumerable>()) { return JTokenType.Array; }
-            if (elemType.IsEnum) { return JTokenType.Integer; }
+            if (elemType.IsEnum) { return JTokenType.String; }
             return JTokenType.Object;
         }
 

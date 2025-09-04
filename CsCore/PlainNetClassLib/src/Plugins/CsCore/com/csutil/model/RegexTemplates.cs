@@ -46,10 +46,10 @@ namespace com.csutil.model {
 
     public static class RegexUtil {
 
-        private static Regex camelCaseSplitter = new Regex(@"(\B[A-Z]+?(?=[A-Z][^A-Z])|\B[A-Z]+?(?=[^A-Z]))");
+        private static Regex camelCaseSplitter = new Regex(@"(?<!^)(?=[A-Z][a-z])|(?<=[a-z])(?=[A-Z])|(?<=[A-Za-z])(?=[0-9])|(?<=[0-9])(?=[A-Za-z])", RegexOptions.Compiled);
 
         public static string SplitCamelCaseString(string camelCaseString) {
-            return camelCaseSplitter.Replace(camelCaseString, " $1").ToFirstCharUpperCase();
+            return camelCaseSplitter.Replace(camelCaseString, " $0").ToFirstCharUpperCase();
         }
 
         /// <summary> Combines multiple regex via AND </summary>

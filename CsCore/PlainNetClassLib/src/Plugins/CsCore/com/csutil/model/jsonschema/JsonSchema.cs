@@ -1,6 +1,6 @@
 using Newtonsoft.Json;
-using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace com.csutil.model.jsonschema {
 
@@ -64,7 +64,7 @@ namespace com.csutil.model.jsonschema {
 
         /// <summary> If the field is an object it has a view model itself, see also
         /// https://json-schema.org/understanding-json-schema/reference/array.html#items </summary>
-        public List<JsonSchema> items;
+        public Items items;
 
         /// <summary> If true items is a set so it can only contain unique items, see also
         /// https://json-schema.org/understanding-json-schema/reference/array.html#uniqueness </summary>
@@ -79,10 +79,23 @@ namespace com.csutil.model.jsonschema {
         /// https://json-schema.org/understanding-json-schema/reference/generic.html#enumerated-values </summary>
         [JsonProperty("enum")]
         public string[] contentEnum;
-        
+
         public bool additionalProperties;
 
-        public static string ToTitle(string varName) { return RegexUtil.SplitCamelCaseString(varName); }
+        public static string ToTitle(string varName) {
+            var words = RegexUtil.SplitCamelCaseString(varName)
+                .Split(' ').SelectMany(x => x.Split('_'))
+                .Where(x => !x.IsNullOrEmpty())
+                .Select(x => char.ToUpper(x[0]) + x.Substring(1));
+            return string.Join(" ", words);
+        }
+
+    }
+
+    public class Items {
+
+        /// <summary> The instance is valid if it matches at least one of the listed schemas. Multiple matches are fine </summary>
+        public List<JsonSchema> anyOf;
 
     }
 
